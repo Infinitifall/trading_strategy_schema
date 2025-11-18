@@ -1,0 +1,30 @@
+{
+  "name": "trading_strategy_schema",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "tsx test/test_strategies.ts",
+    "dev": "nodemon --watch src --watch test --exec tsx test/test_strategies.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Infinitifall/trading_strategy_schema.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Infinitifall/trading_strategy_schema/issues"
+  },
+  "homepage": "https://github.com/Infinitifall/trading_strategy_schema#readme",
+  "devDependencies": {
+    "nodemon": "^3.1.11",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "zod": "^4.1.12"
+  }
+}
