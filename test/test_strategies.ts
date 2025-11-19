@@ -1,8 +1,8 @@
-import { StrategySchema } from "../src/strategy_schema.ts";
+import { StrategySchema } from "../src/strategy_schema";
 
 // LLM generated file !!!
 
-// RUN: npx tsx test_strategies.ts
+// RUN: npm run test
 
 // ============================================================================
 // VALID STRATEGIES
