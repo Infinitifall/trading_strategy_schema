@@ -6,153 +6,175 @@ let IfThenSchema: z.ZodType;
 
 const AllFunctions = (() => {
   const CurrencySchema = z.enum(["INR"]);
-  const AssetSchema = z.object({
-    name: z.string(),
-    type: z.enum(["equity", "options", "futures"]),
-    ticker: z.string(),
-  });
-  const CandleTimeSchema = z.enum(["1min", "5min", "1hour", "1day", "1week"]);
   const ExchangeSchema = z.enum(["NSE", "BSE"]);
+  const CandleTimeSchema = z.enum(["1min", "5min", "1hour", "1day", "1week"]);
+  const InstrumentTypes = z.enum(["equity", "options", "futures"]);
+  const InstrumentSchema = z.object({ name: z.string(), ticker: z.string(), type: InstrumentTypes });
 
   const FunctionShapes = {
+
     // --- User data ------------------------------------------------------
-    "Get Capital": {
-      index: z.lazy(() => ExpressionSchema), // 0 => current, -1, -2, ... => historical
-      key: z.enum(["quantity"]),
+    "Get User Capital": {
+      index: z.lazy(() => ExpressionSchema),  // 0 => current, -1, -2, ... => historical
     },
-    "Get Position": {
+    "Get User Position": {
       index: z.lazy(() => ExpressionSchema),
-      key: z.enum(["entry_price", "quantity"]),
+      key: z.enum(["average_price", "quantity"]),
     },
 
-    // --- Market data ------------------------------------------------------
-    "Get Order Book": {
-      instrument: AssetSchema,
-      side: z.enum(["bid", "offer"]),
-      index: z.lazy(() => ExpressionSchema), // 0 => best, -1, -2, ... => worse
-      key: z.enum(["price", "quantity"]),
-    },
+    // --- Price data ------------------------------------------------------
     "Get Candle": {
-      instrument: AssetSchema,
+      instrument: InstrumentSchema,
       candletime: CandleTimeSchema,
-      index: z.lazy(() => ExpressionSchema), // 0 => current, -1, -2, ... => historical
+      index: z.lazy(() => ExpressionSchema),  // 0 => current, -1, -2, ... => historical
       key: z.enum(["open", "high", "low", "close", "volume"]),
     },
     "Get Tic": {
-      instrument: AssetSchema,
+      instrument: InstrumentSchema,
       index: z.lazy(() => ExpressionSchema),
       key: z.enum(["ltp", "volume"]),
     },
 
-    // --- Orders -------------------------------------------------------------
+    // --- Market Data -------------------------------------------------------------
+    "Get Order Book": {
+      instrument: InstrumentSchema,
+      side: z.enum(["bid", "offer"]),
+      index: z.lazy(() => ExpressionSchema), // 0 => best, -1, -2, ... => worse
+      key: z.enum(["price", "quantity"]),
+    },
     "Place Market Order": {
       exchange: ExchangeSchema,
-      instrument: AssetSchema,
+      instrument: InstrumentSchema,
       quantity: z.lazy(() => ExpressionSchema), // 0< => buy, 0> => sell
     },
     "Place Limit Order": {
       exchange: ExchangeSchema,
-      instrument: AssetSchema,
-      quantity: z.lazy(() => ExpressionSchema), // 0< => buy, 0> => sell
+      instrument: InstrumentSchema,
+      quantity: z.lazy(() => ExpressionSchema),
       currency: CurrencySchema,
       limit_price: z.lazy(() => ExpressionSchema),
     },
 
     // --- Arithmetic and Logic ---------------------------------------------------------
-    "+": { args: z.array(z.lazy(() => ExpressionSchema)) },
-    "-": { args: z.array(z.lazy(() => ExpressionSchema)) },
-    "*": { args: z.array(z.lazy(() => ExpressionSchema)) },
-    "/": { args: z.array(z.lazy(() => ExpressionSchema)) },
-    MIN: { args: z.array(z.lazy(() => ExpressionSchema)) },
-    MAX: { args: z.array(z.lazy(() => ExpressionSchema)) },
-    AND: { args: z.array(z.lazy(() => ExpressionSchema)) },
-    OR: { args: z.array(z.lazy(() => ExpressionSchema)) },
-    NOT: { args: z.array(z.lazy(() => ExpressionSchema)) },
-    ">": { args: z.array(z.lazy(() => ExpressionSchema)) },
+    "+":  { args: z.array(z.lazy(() => ExpressionSchema)) },
+    "-":  { args: z.array(z.lazy(() => ExpressionSchema)) },
+    "*":  { args: z.array(z.lazy(() => ExpressionSchema)) },
+    "/":  { args: z.array(z.lazy(() => ExpressionSchema)) },
+    "^":  { args: z.array(z.lazy(() => ExpressionSchema)).length(2) },
+    ABS:  { args: z.array(z.lazy(() => ExpressionSchema)).length(1) },
+    MIN:  { args: z.array(z.lazy(() => ExpressionSchema)) },  // False => 0, True => 1
+    MAX:  { args: z.array(z.lazy(() => ExpressionSchema)) },
+    AND:  { args: z.array(z.lazy(() => ExpressionSchema)) },
+    OR:   { args: z.array(z.lazy(() => ExpressionSchema)) },
+    NOT:  { args: z.array(z.lazy(() => ExpressionSchema)).length(1) },
+    ">":  { args: z.array(z.lazy(() => ExpressionSchema)) },
+    "<":  { args: z.array(z.lazy(() => ExpressionSchema)) },
+    ">=": { args: z.array(z.lazy(() => ExpressionSchema)) },
+    "<=": { args: z.array(z.lazy(() => ExpressionSchema)) },
     "==": { args: z.array(z.lazy(() => ExpressionSchema)) },
+    "!=": { args: z.array(z.lazy(() => ExpressionSchema)) },
+
+    // --- Set/Get Variables ---------------------------------------------------------
+    "set": { symbol: z.string(), value: z.lazy(() => ExpressionSchema) },
+    "get": { symbol: z.string() },
 
     // --- Moving Averages ----------------------------------------------------
     SMA: {
-      instrument: AssetSchema,
+      instrument: InstrumentSchema,
       candletime: CandleTimeSchema,
+      index: z.lazy(() => ExpressionSchema).optional(),  // 0 => current, -1, -2, ... => historical
       period: z.lazy(() => ExpressionSchema),
     },
     EMA: {
-      instrument: AssetSchema,
+      instrument: InstrumentSchema,
       candletime: CandleTimeSchema,
+      index: z.lazy(() => ExpressionSchema).optional(),
       period: z.lazy(() => ExpressionSchema),
       smoothing: z.lazy(() => ExpressionSchema),
     },
     WMA: {
-      instrument: AssetSchema,
+      instrument: InstrumentSchema,
       candletime: CandleTimeSchema,
+      index: z.lazy(() => ExpressionSchema).optional(),
       period: z.lazy(() => ExpressionSchema),
     },
     HMA: {
-      instrument: AssetSchema,
+      instrument: InstrumentSchema,
       candletime: CandleTimeSchema,
+      index: z.lazy(() => ExpressionSchema).optional(),
       period: z.lazy(() => ExpressionSchema),
     },
     SMMA: {
-      instrument: AssetSchema,
+      instrument: InstrumentSchema,
       candletime: CandleTimeSchema,
+      index: z.lazy(() => ExpressionSchema).optional(),
       period: z.lazy(() => ExpressionSchema),
     },
     DEMA: {
-      instrument: AssetSchema,
+      instrument: InstrumentSchema,
       candletime: CandleTimeSchema,
+      index: z.lazy(() => ExpressionSchema).optional(),
       fast: z.lazy(() => ExpressionSchema),
       slow: z.lazy(() => ExpressionSchema),
     },
     TEMA: {
-      instrument: AssetSchema,
+      instrument: InstrumentSchema,
       candletime: CandleTimeSchema,
+      index: z.lazy(() => ExpressionSchema).optional(),
       fast: z.lazy(() => ExpressionSchema),
       slow: z.lazy(() => ExpressionSchema),
     },
     TRIMA: {
-      instrument: AssetSchema,
+      instrument: InstrumentSchema,
       candletime: CandleTimeSchema,
+      index: z.lazy(() => ExpressionSchema).optional(),
       period: z.lazy(() => ExpressionSchema),
     },
     KAMA: {
-      instrument: AssetSchema,
+      instrument: InstrumentSchema,
       candletime: CandleTimeSchema,
+      index: z.lazy(() => ExpressionSchema).optional(),
       period: z.lazy(() => ExpressionSchema),
     },
 
     // --- Trend strength -----------------------------------------------------
     ADX: {
-      instrument: AssetSchema,
+      instrument: InstrumentSchema,
       candletime: CandleTimeSchema,
+      index: z.lazy(() => ExpressionSchema).optional(),
       period: z.lazy(() => ExpressionSchema),
     },
     ADXR: {
-      instrument: AssetSchema,
+      instrument: InstrumentSchema,
       candletime: CandleTimeSchema,
+      index: z.lazy(() => ExpressionSchema).optional(),
       period: z.lazy(() => ExpressionSchema),
     },
     DMI: {
-      instrument: AssetSchema,
+      instrument: InstrumentSchema,
       candletime: CandleTimeSchema,
+      index: z.lazy(() => ExpressionSchema).optional(),
       period: z.lazy(() => ExpressionSchema),
       key: z.enum(["plus", "minus"]),
     },
     Aroon: {
-      instrument: AssetSchema,
+      instrument: InstrumentSchema,
       candletime: CandleTimeSchema,
+      index: z.lazy(() => ExpressionSchema).optional(),
       period: z.lazy(() => ExpressionSchema),
       key: z.enum(["up", "down"]),
     },
     "Parabolic SAR": {
-      instrument: AssetSchema,
+      instrument: InstrumentSchema,
       candletime: CandleTimeSchema,
+      index: z.lazy(() => ExpressionSchema).optional(),
       step: z.lazy(() => ExpressionSchema),
       max_step: z.lazy(() => ExpressionSchema),
     },
     Ichimoku: {
-      instrument: AssetSchema,
+      instrument: InstrumentSchema,
       candletime: CandleTimeSchema,
+      index: z.lazy(() => ExpressionSchema).optional(),
       tenkan: z.lazy(() => ExpressionSchema),
       kijun: z.lazy(() => ExpressionSchema),
       senkou_a: z.lazy(() => ExpressionSchema),
@@ -162,54 +184,63 @@ const AllFunctions = (() => {
 
     // --- Momentum -----------------------------------------------------------
     RSI: {
-      instrument: AssetSchema,
+      instrument: InstrumentSchema,
       candletime: CandleTimeSchema,
+      index: z.lazy(() => ExpressionSchema).optional(),
       period: z.lazy(() => ExpressionSchema),
     },
     Stochastic: {
-      instrument: AssetSchema,
+      instrument: InstrumentSchema,
       candletime: CandleTimeSchema,
+      index: z.lazy(() => ExpressionSchema).optional(),
       k_period: z.lazy(() => ExpressionSchema),
       d_period: z.lazy(() => ExpressionSchema),
       key: z.enum(["k", "d"]),
     },
     "Stochastic RSI": {
-      instrument: AssetSchema,
+      instrument: InstrumentSchema,
       candletime: CandleTimeSchema,
+      index: z.lazy(() => ExpressionSchema).optional(),
       k_period: z.lazy(() => ExpressionSchema),
       d_period: z.lazy(() => ExpressionSchema),
       key: z.enum(["k", "d"]),
     },
     CCI: {
-      instrument: AssetSchema,
+      instrument: InstrumentSchema,
       candletime: CandleTimeSchema,
+      index: z.lazy(() => ExpressionSchema).optional(),
       period: z.lazy(() => ExpressionSchema),
     },
     ROC: {
-      instrument: AssetSchema,
+      instrument: InstrumentSchema,
       candletime: CandleTimeSchema,
+      index: z.lazy(() => ExpressionSchema).optional(),
       period: z.lazy(() => ExpressionSchema),
     },
     "Williams %R": {
-      instrument: AssetSchema,
+      instrument: InstrumentSchema,
       candletime: CandleTimeSchema,
+      index: z.lazy(() => ExpressionSchema).optional(),
       period: z.lazy(() => ExpressionSchema),
     },
     "Ultimate Oscillator": {
-      instrument: AssetSchema,
+      instrument: InstrumentSchema,
       candletime: CandleTimeSchema,
+      index: z.lazy(() => ExpressionSchema).optional(),
       period: z.lazy(() => ExpressionSchema),
     },
     TRIX: {
-      instrument: AssetSchema,
+      instrument: InstrumentSchema,
       candletime: CandleTimeSchema,
+      index: z.lazy(() => ExpressionSchema).optional(),
       period: z.lazy(() => ExpressionSchema),
     },
 
     // --- MACD ---------------------------------------------------------------
     MACD: {
-      instrument: AssetSchema,
+      instrument: InstrumentSchema,
       candletime: CandleTimeSchema,
+      index: z.lazy(() => ExpressionSchema).optional(),
       fast: z.lazy(() => ExpressionSchema),
       slow: z.lazy(() => ExpressionSchema),
       signal: z.lazy(() => ExpressionSchema),
@@ -218,28 +249,32 @@ const AllFunctions = (() => {
 
     // --- Volatility ---------------------------------------------------------
     ATR: {
-      instrument: AssetSchema,
+      instrument: InstrumentSchema,
       candletime: CandleTimeSchema,
+      index: z.lazy(() => ExpressionSchema).optional(),
       period: z.lazy(() => ExpressionSchema),
     },
     "Bollinger Bands": {
-      instrument: AssetSchema,
+      instrument: InstrumentSchema,
       candletime: CandleTimeSchema,
+      index: z.lazy(() => ExpressionSchema).optional(),
       period: z.lazy(() => ExpressionSchema),
       stddev: z.lazy(() => ExpressionSchema),
       key: z.enum(["high", "middle", "low"]),
     },
 
     "Donchian Channels": {
-      instrument: AssetSchema,
+      instrument: InstrumentSchema,
       candletime: CandleTimeSchema,
+      index: z.lazy(() => ExpressionSchema).optional(),
       period: z.lazy(() => ExpressionSchema),
       key: z.enum(["high", "low"]),
     },
 
     "Keltner Channels": {
-      instrument: AssetSchema,
+      instrument: InstrumentSchema,
       candletime: CandleTimeSchema,
+      index: z.lazy(() => ExpressionSchema).optional(),
       period: z.lazy(() => ExpressionSchema),
       multiplier: z.lazy(() => ExpressionSchema),
       key: z.enum(["high", "middle", "low"]),
@@ -247,58 +282,63 @@ const AllFunctions = (() => {
 
     // --- Volume -------------------------------------------------------------
     OBV: {
-      instrument: AssetSchema,
+      instrument: InstrumentSchema,
       candletime: CandleTimeSchema,
-      index: z.lazy(() => ExpressionSchema),
+      index: z.lazy(() => ExpressionSchema).optional(),
     },
     "Chaikin Money Flow": {
-      instrument: AssetSchema,
+      instrument: InstrumentSchema,
       candletime: CandleTimeSchema,
+      index: z.lazy(() => ExpressionSchema).optional(),
       period: z.lazy(() => ExpressionSchema),
     },
     "Accum/Dist Line": {
-      instrument: AssetSchema,
+      instrument: InstrumentSchema,
       candletime: CandleTimeSchema,
-      index: z.lazy(() => ExpressionSchema),
+      index: z.lazy(() => ExpressionSchema).optional(),
     },
     "Force Index": {
-      instrument: AssetSchema,
+      instrument: InstrumentSchema,
       candletime: CandleTimeSchema,
+      index: z.lazy(() => ExpressionSchema).optional(),
       period: z.lazy(() => ExpressionSchema),
     },
     "Volume Oscillator": {
-      instrument: AssetSchema,
+      instrument: InstrumentSchema,
       candletime: CandleTimeSchema,
+      index: z.lazy(() => ExpressionSchema).optional(),
       period: z.lazy(() => ExpressionSchema),
     },
 
-    // --- Market structure ---------------------------------------------------
+    // --- Misc ---------------------------------------------------
     "Pivot Points": {
-      instrument: AssetSchema,
+      instrument: InstrumentSchema,
       candletime: CandleTimeSchema,
+      index: z.lazy(() => ExpressionSchema).optional(),
       period: z.lazy(() => ExpressionSchema),
       key: z.enum(["pp", "r1", "r2", "r3", "s1", "s2", "s3"]),
     },
-
-    // --- Misc QOL functions ---------------------------------------------------
     "Fair Value Gap": {
-      instrument: AssetSchema,
+      instrument: InstrumentSchema,
       candletime: CandleTimeSchema,
-      index: z.lazy(() => ExpressionSchema),
+      index: z.lazy(() => ExpressionSchema).optional(),
     },
     "Put Call Ratio": {
-      instrument: AssetSchema,
+      instrument: InstrumentSchema,
       candletime: CandleTimeSchema,
+      index: z.lazy(() => ExpressionSchema).optional(),
       period: z.lazy(() => ExpressionSchema),
     },
     "Open Interest": {
-      instrument: AssetSchema,
+      instrument: InstrumentSchema,
       candletime: CandleTimeSchema,
+      index: z.lazy(() => ExpressionSchema).optional(),
       period: z.lazy(() => ExpressionSchema),
     },
     VWAP: {
-      instrument: AssetSchema,
+      instrument: InstrumentSchema,
       candletime: CandleTimeSchema,
+      index: z.lazy(() => ExpressionSchema).optional(),
     },
   };
 
