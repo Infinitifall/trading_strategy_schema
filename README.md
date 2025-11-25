@@ -1,18 +1,20 @@
 # Trading Strategy Schema
 
-A trading strategy DSL and transpiler, for use with [backtrader](https://github.com/mementum/backtrader). Use at your own discretion.
+A trading strategy DSL and transpiler. Use at your own discretion!
 
-## Strategy DSL
 
-We use a [Zod](https://zod.dev/) schema to define our trading strategy DSL.
+## DSL
 
-|Design choice|Philosophy|
-|-------------|---------|
-|S-expression-like|Eliminates the need to build an AST during transpilation [\[1\]](https://web.archive.org/web/20130202074222/https://blogs.oracle.com/blue/entry/homoiconic_languages)|
-|Atoms are numbers|The C programming language|
-|Functions return numbers|Chaining functions together is trivial|
-|Huge list of indicators|Give users all the choices they care about [\[2\]](https://www.joelonsoftware.com/2000/04/12/choices/)|
-|Aggressive minimalism|All else being equal, less code is easier to reason about|
+A [Zod schema](https://zod.dev/) is used to define the DSL.
+
+
+|Design|Philosophy|
+|------|----------|
+|Everything is an expression|-|
+|Expressions evaluate to an atomic type|Chaining functions together is trivial. Superior control flow [1](https://clojure.org/guides/learn/flow).|
+|`number` is the only atomic type|The C programming language|
+|Uniform interface: `{"function": ... }`|Easy to parse. Easy to remember. Easy to read and to write. Eliminates the need to build an AST [1](https://web.archive.org/web/20130202074222/https://blogs.oracle.com/blue/entry/homoiconic_languages).|
+|Abundant choice of trading indicators|Give users all the choices they care about! This doesn't interfere with the simplicity our DSL!|
 
 
 ```bash
@@ -24,11 +26,11 @@ npm run test
 ```
 
 
-An example strategy:
+Here's what an example strategy looks like:
 
 ```json
 {
-  "name": "Valid 2 — ADX/DMI/SMA Trend Long",
+  "name": "Valid 1 — RSI + ATR WRB Buy",
   "author": "vader",
   "strategy": {
     "function": "ifthen",
@@ -38,43 +40,16 @@ An example strategy:
         {
           "function": ">",
           "args": [
+            30,
             {
-              "function": "ADX",
+              "function": "RSI",
               "instrument": {
-                "name": "I",
+                "name": "R",
                 "type": "equity",
-                "ticker": "I"
+                "ticker": "R"
               },
               "candletime": "1day",
               "period": 14
-            },
-            20
-          ]
-        },
-        {
-          "function": ">",
-          "args": [
-            {
-              "function": "DMI",
-              "instrument": {
-                "name": "I",
-                "type": "equity",
-                "ticker": "I"
-              },
-              "candletime": "1day",
-              "period": 14,
-              "key": "plus"
-            },
-            {
-              "function": "DMI",
-              "instrument": {
-                "name": "I",
-                "type": "equity",
-                "ticker": "I"
-              },
-              "candletime": "1day",
-              "period": 14,
-              "key": "minus"
             }
           ]
         },
@@ -82,25 +57,41 @@ An example strategy:
           "function": ">",
           "args": [
             {
-              "function": "Get Candle",
-              "instrument": {
-                "name": "I",
-                "type": "equity",
-                "ticker": "I"
-              },
-              "candletime": "1day",
-              "index": 0,
-              "key": "close"
+              "function": "-",
+              "args": [
+                {
+                  "function": "Get Candle",
+                  "instrument": {
+                    "name": "R",
+                    "type": "equity",
+                    "ticker": "R"
+                  },
+                  "candletime": "1day",
+                  "index": 0,
+                  "key": "high"
+                },
+                {
+                  "function": "Get Candle",
+                  "instrument": {
+                    "name": "R",
+                    "type": "equity",
+                    "ticker": "R"
+                  },
+                  "candletime": "1day",
+                  "index": 0,
+                  "key": "low"
+                }
+              ]
             },
             {
-              "function": "SMA",
+              "function": "ATR",
               "instrument": {
-                "name": "I",
+                "name": "R",
                 "type": "equity",
-                "ticker": "I"
+                "ticker": "R"
               },
               "candletime": "1day",
-              "period": 50
+              "period": 14
             }
           ]
         }
@@ -111,20 +102,21 @@ An example strategy:
         "function": "Place Market Order",
         "exchange": "NSE",
         "instrument": {
-          "name": "INFY",
+          "name": "RELIANCE",
           "type": "equity",
-          "ticker": "INFY"
+          "ticker": "RELIANCE"
         },
-        "quantity": 10
+        "quantity": 12
       }
     ]
   }
 }
 ```
 
-## Transpiler
 
-A transpiler in Python to convert a trading strategy in JSON format to a `Strategy` class compatible with [backtrader](https://github.com/mementum/backtrader).
+## Transpiler (JSON to Python)
+
+A transpiler to convert a trading strategy to a `Strategy` Python class, compatible with [backtrader](https://github.com/mementum/backtrader).
 
 ```bash
 # install
