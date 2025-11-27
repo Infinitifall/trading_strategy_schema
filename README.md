@@ -1,6 +1,8 @@
 # Trading Strategy Schema
 
-A trading strategy DSL and transpiler. Use at your own discretion!
+A trading strategy DSL and transpiler.
+
+The weak-form of the Efficient Market Hypothesis is true. This is a toy project with no external utility.
 
 
 ## DSL
@@ -21,16 +23,15 @@ A [Zod schema](https://zod.dev/) is used to define the DSL.
 # install
 npm install
 
-# validate test strategies
+# validate example strategy
 npm run test
 ```
 
-
-Here's what an example strategy looks like:
+This simple strategy serves as an example template. Strategies can be as simple or complex as you like, mixing any number of instruments, candles/ticks, operations, indicators and custom functions!
 
 ```json
 {
-  "name": "Valid 1 — RSI + ATR WRB Buy",
+  "name": "RSI + ATR WRB Buy",
   "author": "vader",
   "strategy": {
     "function": "ifthen",
@@ -102,11 +103,21 @@ Here's what an example strategy looks like:
         "function": "Place Market Order",
         "exchange": "NSE",
         "instrument": {
-          "name": "RELIANCE",
+          "name": "R",
           "type": "equity",
-          "ticker": "RELIANCE"
+          "ticker": "R"
         },
         "quantity": 12
+      },
+      {
+        "function": "Place Market Order",
+        "exchange": "NSE",
+        "instrument": {
+          "name": "R2",
+          "type": "equity",
+          "ticker": "R2"
+        },
+        "quantity": 3
       }
     ]
   }
